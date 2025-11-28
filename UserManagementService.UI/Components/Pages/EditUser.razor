@@ -1,0 +1,165 @@
+@page "/users/create"
+@page "/users/edit/{Id:int}"
+@using System.ComponentModel.DataAnnotations
+@using UserManagementService.Common.DTOs
+@using UserManagementService.UI.Services
+@inject UserServiceClient UserService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(Id == null ? "Create User" : "Edit User")</PageTitle>
+
+<h1>@(Id == null ? "Create User" : "Edit User")</h1>
+
+@if (isLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="@userModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <InputText id="username" class="form-control" @bind-Value="userModel.UserName" />
+        </div>
+
+        <div class="mb-3">
+            <label for="fullname" class="form-label">Full Name</label>
+            <InputText id="fullname" class="form-control" @bind-Value="userModel.FullName" />
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <InputText id="email" class="form-control" @bind-Value="userModel.Email" ReadOnly="@(Id != null)" />
+            @if (Id != null)
+            {
+                <small class="text-muted">Email acts as the user identifier and cannot be changed.</small>
+            }
+        </div>
+
+        <div class="mb-3">
+            <label for="mobile" class="form-label">Mobile</label>
+            <InputText id="mobile" class="form-control" @bind-Value="userModel.Mobile" />
+        </div>
+
+        <div class="mb-3">
+            <label for="language" class="form-label">Language</label>
+            <InputText id="language" class="form-control" @bind-Value="userModel.Language" />
+        </div>
+
+        <div class="mb-3">
+            <label for="culture" class="form-label">Culture</label>
+            <InputText id="culture" class="form-control" @bind-Value="userModel.Culture" />
+        </div>
+
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <InputText id="password" type="password" class="form-control" @bind-Value="userModel.Password" />
+            @if (Id != null)
+            {
+                <small class="text-muted">Leave blank to keep existing password.</small>
+            }
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private UserFormModel userModel = new();
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != null)
+        {
+            isLoading = true;
+            var user = await UserService.GetUserAsync(Id.Value);
+            if (user != null)
+            {
+                userModel = new UserFormModel
+                {
+                    UserName = user.UserName,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    Mobile = user.Mobile,
+                    Language = user.Language,
+                    Culture = user.Culture
+                };
+            }
+            else
+            {
+                NavigationManager.NavigateTo("users");
+            }
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (Id == null)
+        {
+            // Create
+            var createDto = new CreateUserDto
+            {
+                UserName = userModel.UserName,
+                FullName = userModel.FullName,
+                Email = userModel.Email,
+                Mobile = userModel.Mobile,
+                Language = userModel.Language,
+                Culture = userModel.Culture,
+                Password = userModel.Password! // Required for create
+            };
+            await UserService.CreateUserAsync(createDto);
+        }
+        else
+        {
+            // Update
+            var updateDto = new UpdateUserDto
+            {
+                Email = userModel.Email,
+                UserName = userModel.UserName,
+                FullName = userModel.FullName,
+                Mobile = userModel.Mobile,
+                Language = userModel.Language,
+                Culture = userModel.Culture,
+                Password = string.IsNullOrEmpty(userModel.Password) ? null : userModel.Password
+            };
+            await UserService.UpdateUserAsync(updateDto);
+        }
+
+        NavigationManager.NavigateTo("users");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("users");
+    }
+
+    public class UserFormModel
+    {
+        [Required]
+        public string UserName { get; set; } = string.Empty;
+
+        [Required]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        public string Mobile { get; set; } = string.Empty;
+        public string Language { get; set; } = string.Empty;
+        public string Culture { get; set; } = string.Empty;
+        
+        // Password validation logic differs for Create vs Update, simplified here
+        public string? Password { get; set; }
+    }
+}
+

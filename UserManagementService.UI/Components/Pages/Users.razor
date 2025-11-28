@@ -1,0 +1,84 @@
+@page "/users"
+@using UserManagementService.Common.DTOs
+@using UserManagementService.UI.Services
+@inject UserServiceClient UserService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Users</PageTitle>
+
+<h1>User Management</h1>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="CreateUser">Add New User</button>
+</div>
+
+@if (users == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>UserName</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Mobile</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.UserName</td>
+                    <td>@user.FullName</td>
+                    <td>@user.Email</td>
+                    <td>@user.Mobile</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" @onclick="() => EditUser(user.Id)">Edit</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteUser(user.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<UserDto>? users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        users = await UserService.GetUsersAsync();
+    }
+
+    private void CreateUser()
+    {
+        NavigationManager.NavigateTo("/users/create");
+    }
+
+    private void EditUser(int id)
+    {
+        NavigationManager.NavigateTo($"/users/edit/{id}");
+    }
+
+    private async Task DeleteUser(int id)
+    {
+        var confirmed = true; // In a real app, show a confirmation dialog/JS interop
+        if (confirmed)
+        {
+            await UserService.DeleteUserAsync(id);
+            await LoadUsers();
+        }
+    }
+}
+

@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "UI + API",
+    "Projects": [
+      {
+        "Path": "UserManagementService\\UserManagementService.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "UserManagementService.UI\\UserManagementService.UI.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
